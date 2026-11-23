@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saúde Perto • Protótipo ODS 3</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#edf6f2;color:#16342d;font:16px/1.5 system-ui,sans-serif}
+header{background:#103b32;color:#fff;padding:3rem max(6vw,1rem)} header p{color:#c5e8dc;max-width:45ch;margin:0}
+h1{font-size:clamp(2rem,6vw,4rem);line-height:1.05;margin:.35em 0}
+small{letter-spacing:.12em} main{max-width:1050px;margin:auto;padding:1.5rem}
+nav,form,.actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+button,input,select{font:inherit;border:1px solid #74a397;border-radius:.45rem;padding:.55rem .8rem}
+button{background:white;color:#103b32;cursor:pointer} button[aria-current],button.primary{background:#14624f;color:white}
+input{flex:1;min-width:175px} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+article,.detail{background:#fff;border:1px solid #cadfd7;border-radius:.75rem;padding:1.1rem}
+article h3{margin:.2rem 0} article p{margin:.5rem 0} .tag{color:#20614e;font-weight:650}
+:focus-visible{outline:3px solid #b15614;outline-offset:3px} [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><small>PROTÓTIPO ACADÊMICO · ODS 3</small><h1>Saúde Perto</h1>
+<p>Explore um catálogo demonstrativo de serviços de saúde e organize os itens que quer consultar depois.</p></header>
+<main>
+<nav aria-label="Navegação do protótipo">
+<button id="catalogo" aria-current="page">Catálogo</button>
+<button id="salvos">Salvos</button>
+</nav>
+<p><strong>Dados fictícios para demonstração.</strong> Consulte os canais oficiais para informações reais.</p>
+<section id="lista">
+<h2 id="titulo">Catálogo demonstrativo</h2>
+<form id="filtros">
+<input id="busca" type="search" aria-label="Buscar serviço ou bairro" placeholder="Buscar serviço ou bairro">
+<select id="categoria" aria-label="Categoria"><option value="">Todas as categorias</option><option>Vacinação</option><option>Atenção básica</option><option>Bem-estar</option></select>
+<button type="reset">Limpar</button>
+</form>
+<p id="status" aria-live="polite"></p>
+<div id="resultados" class="grid"></div>
+</section>
+<section id="detalhes" class="detail" hidden aria-labelledby="tituloDetalhe">
+<div class="actions"><button id="voltar">Voltar à lista</button></div>
+<h2 id="tituloDetalhe" tabindex="-1"></h2><p id="bairroDetalhe"></p><p id="descricao"></p>
+<button id="alternar" class="primary"></button>
+</section>
+</main>
+<script>
+class Servico {
+  constructor(id, nome, categoria, bairro, descricao) {
+    Object.assign(this, {id, nome, categoria, bairro, descricao});
+  }
+  corresponde(busca, categoria) {
+    const normalizar = texto => texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return (!categoria || this.categoria === categoria) &&
+      normalizar(this.nome + ' ' + this.bairro).includes(normalizar(busca.trim()));
+  }
+}
+class Catalogo {
+  constructor(servicos) { this.servicos = servicos; }
+  buscar(busca, categoria) { return this.servicos.filter(s => s.corresponde(busca, categoria)); }
+}
+class Favoritos {
+  constructor() {
+    this.chave = 'saude-perto-favoritos';
+    this.ids = new Set();
+    try {
+      const valor = JSON.parse(localStorage.getItem(this.chave) || '[]');
+      if (Array.isArray(valor)) this.ids = new Set(valor);
+    } catch {}
+  }
+  tem(id) { return this.ids.has(id); }
+  alternar(id) {
+    if (this.tem(id)) this.ids.delete(id);
+    else this.ids.add(id);
+    try { localStorage.setItem(this.chave, JSON.stringify([...this.ids])); }
+    catch {}
+  }
+}
+const catalogo = new Catalogo([
+  new Servico(1,'Ponto de vacinação Aurora','Vacinação','Vila Aurora','Exemplo de ficha para uma unidade que oferece orientações sobre vacinação e calendário vacinal.'),
+  new Servico(2,'Unidade Jardim das Paineiras','Atenção básica','Jardim das Paineiras','Exemplo de ficha para uma unidade de atendimento básico e orientação sobre serviços disponíveis.'),
+  new Servico(3,'Centro Comunitário Horizonte','Bem-estar','Parque Horizonte','Exemplo de ficha para um centro comunitário com atividades de convivência e promoção de bem-estar.'),
+  new Servico(4,'Ponto de vacinação Estação','Vacinação','Parque Horizonte','Segunda ficha de exemplo para demonstrar a combinação de busca por bairro e categoria.')
+]);
+const favoritos = new Favoritos();
+const el = id => document.getElementById(id);
+let mostrandoSalvos = false;
+let selecionado = null;
+function mostrarLista() {
+  selecionado = null;
+  el('lista').hidden = false;
+  el('detalhes').hidden = true;
+  el('filtros').hidden = mostrandoSalvos;
+  el('titulo').textContent = mostrandoSalvos ? 'Serviços salvos' : 'Catálogo demonstrativo';
+  el('catalogo').toggleAttribute('aria-current', !mostrandoSalvos);
+  el('salvos').toggleAttribute('aria-current', mostrandoSalvos);
+  if (mostrandoSalvos) el('salvos').setAttribute('aria-current','page');
+  else el('catalogo').setAttribute('aria-current','page');
+  const itens = mostrandoSalvos
+    ? catalogo.servicos.filter(s => favoritos.tem(s.id))
+    : catalogo.buscar(el('busca').value, el('categoria').value);
+  el('status').textContent = itens.length
+    ? itens.length + (itens.length === 1 ? ' serviço encontrado.' : ' serviços encontrados.')
+    : mostrandoSalvos ? 'Você ainda não salvou nenhum serviço.' : 'Nenhum serviço corresponde aos filtros.';
+  el('resultados').replaceChildren(...itens.map(servico => {
+    const card = document.createElement('article');
+    const tag = document.createElement('span');
+    const nome = document.createElement('h3');
+    const bairro = document.createElement('p');
+    const ver = document.createElement('button');
+    tag.className = 'tag';
+    tag.textContent = servico.categoria;
+    nome.textContent = servico.nome;
+    bairro.textContent = servico.bairro;
+    ver.textContent = 'Ver detalhes';
+    ver.setAttribute('aria-label', 'Ver detalhes de ' + servico.nome);
+    ver.addEventListener('click', () => mostrarDetalhes(servico));
+    card.append(tag, nome, bairro, ver);
+    return card;
+  }));
+}
+function mostrarDetalhes(servico) {
+  selecionado = servico;
+  el('lista').hidden = true;
+  el('detalhes').hidden = false;
+  el('tituloDetalhe').textContent = servico.nome;
+  el('bairroDetalhe').textContent = servico.categoria + ' · ' + servico.bairro;
+  el('descricao').textContent = servico.descricao;
+  atualizarBotao();
+  el('tituloDetalhe').focus();
+}
+function atualizarBotao() {
+  el('alternar').textContent = favoritos.tem(selecionado.id) ? 'Remover dos salvos' : 'Salvar serviço';
+}
+el('catalogo').onclick = () => { mostrandoSalvos = false; mostrarLista(); };
+el('salvos').onclick = () => { mostrandoSalvos = true; mostrarLista(); };
+el('voltar').onclick = mostrarLista;
+el('alternar').onclick = () => { favoritos.alternar(selecionado.id); atualizarBotao(); };
+el('busca').addEventListener('input', mostrarLista);
+el('categoria').addEventListener('change', mostrarLista);
+el('filtros').addEventListener('submit', evento => evento.preventDefault());
+el('filtros').addEventListener('reset', () => setTimeout(mostrarLista, 0));
+mostrarLista();
+</script>
+</body>
+</html>
