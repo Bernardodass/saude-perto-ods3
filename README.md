@@ -25,13 +25,19 @@ HTML para estrutura, CSS para layout responsivo e JavaScript para navegação e 
 
 A ideia de um catálogo virou um fluxo navegável com filtro combinado, detalhes e favoritos persistentes.
 
-## Prints sugeridos
+## Capturas do protótipo
 
-- Catálogo filtrado por **Parque Horizonte** e **Vacinação**.
-- Detalhes do serviço com o botão **Remover dos salvos** após salvar.
-- Tela **Salvos** com a ficha de demonstração.
+- [Catálogo](demo/catalogo.jpg)
+- [Busca e filtro combinados](demo/busca.jpg)
+- [Detalhes da ficha salva](demo/detalhes.jpg)
+- [Lista de favoritos](demo/salvos.jpg)
 
-## Roteiro de vídeo, cerca de 1 minuto
+## Demonstração
+
+- [Abrir o protótipo](https://bernardodass.github.io/saude-perto-ods3/)
+- [Assistir ao vídeo com legendas](demo/demonstracao.mp4)
+
+## Roteiro de apresentação
 
 - **0:00–0:15** — Apresente o problema e o ODS 3. Explique que os registros são fictícios.
 - **0:15–0:35** — Demonstre a busca por bairro, o filtro por categoria e a abertura de uma ficha.
